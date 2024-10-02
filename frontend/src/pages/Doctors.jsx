@@ -1,7 +1,6 @@
-import React, { useContext, useEffect } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
-import { useState } from "react";
 
 const Doctors = () => {
   const { speciality } = useParams();
@@ -20,6 +19,7 @@ const Doctors = () => {
   useEffect(() => {
     applyFilter();
   }, [doctors, speciality]);
+
   return (
     <div>
       <p className="text-gray-600">Browse through the doctors specialist</p>
@@ -69,7 +69,7 @@ const Doctors = () => {
                 ? navigate("/doctors")
                 : navigate("/doctors/Pediatricians")
             }
-            className={`w-[94vw] sm:w-auto py-1.5 pr-16 border border-gray-300 rounded transition-all cursor-pointer pl-3  ${
+            className={`w-[94vw] sm:w-auto py-1.5 pr-16 border border-gray-300 rounded transition-all cursor-pointer pl-3 ${
               speciality === "Pediatricians" ? "bg-indigo-100 text-black" : ""
             }`}
           >
@@ -106,7 +106,7 @@ const Doctors = () => {
           {filterDoc.map((item, index) => (
             <div
               onClick={() => {
-                navigate(`/appointemnt/${item._id}`);
+                navigate(`/appointment/${item._id}`); // Corrected navigation path
               }}
               className="border border-blue-200 rounded-xl overflow-hidden cursor-pointer hover:translate-y-[-10px] transition-all duration-500"
               key={index}
@@ -117,7 +117,6 @@ const Doctors = () => {
                   <p className="w-2 h-2 bg-green-500 rounded-full"></p>
                   <p>Available</p>
                 </div>
-
                 <p className="text-gray-900 text-lg font-medium">{item.name}</p>
                 <p className="text-gray-600 text-sm">{item.speciality}</p>
               </div>
