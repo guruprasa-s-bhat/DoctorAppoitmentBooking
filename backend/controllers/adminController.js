@@ -12,13 +12,21 @@ const addDoctor = async (req, res) => {
       password,
       speciality,
       degree,
-      experiance,
+      experience, // Fixing typo
       about,
       fees,
       address,
     } = req.body;
 
     const imageFile = req.file;
+
+    // Check if the image file is provided
+    if (!imageFile) {
+      return res.status(400).json({
+        success: false,
+        message: "Image file is required",
+      });
+    }
 
     // Validate required fields
     if (
@@ -27,7 +35,7 @@ const addDoctor = async (req, res) => {
       !password ||
       !speciality ||
       !degree ||
-      !experiance ||
+      !experience ||
       !about ||
       !fees ||
       !address
@@ -69,7 +77,7 @@ const addDoctor = async (req, res) => {
       password: hashedPassword,
       speciality,
       degree,
-      experiance,
+      experience, // Fixed typo
       about,
       fees,
       address: JSON.parse(address),

@@ -8,10 +8,14 @@ const doctorSchema = new mongoose.Schema(
     image: { type: String, required: true },
     speciality: { type: String, required: true },
     degree: { type: String, required: true },
-    experiance: { type: String, required: true },
+    experience: { type: Number, required: true }, // Changed to Number
     about: { type: String, required: true },
     fees: { type: Number, required: true },
-    address: { type: String, required: true },
+    address: {
+      // Changed to an object
+      line1: { type: String, required: true },
+      line2: { type: String, required: true },
+    },
     available: { type: Boolean, default: true },
     date: { type: Number, required: true },
     slots_booked: { type: Object, default: {} },

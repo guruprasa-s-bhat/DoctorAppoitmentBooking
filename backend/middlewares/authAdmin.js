@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 
 //admin Authentication middleware
 
-const authAdmin = async (req, res) => {
+const authAdmin = async (req, res, next) => {
   try {
     const { atoken } = req.headers;
     if (!atoken) {
@@ -24,3 +24,4 @@ const authAdmin = async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
+export default authAdmin;
