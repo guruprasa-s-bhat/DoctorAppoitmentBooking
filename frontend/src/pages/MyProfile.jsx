@@ -1,6 +1,5 @@
-import React, { useState } from "react";
-import { assets } from "../assets/assets_frontend/assets";
-// Importing only necessary icons to avoid import issues
+import React, { useContext, useState, useEffect } from "react";
+import { assets } from "../assets/assets_frontend/assets"; // Assuming you still need this import
 import {
   FaEdit,
   FaSave,
@@ -11,21 +10,67 @@ import {
   FaVenusMars,
   FaBirthdayCake,
 } from "react-icons/fa";
+import { AppContext } from "../context/AppContext";
+import axios from "axios";
+import { toast } from "react-toastify";
 
 const MyProfile = () => {
-  const [userData, setUserData] = useState({
-    name: "Guruprasad",
-    image: assets.profile_pic,
-    email: "guruprasad@gmail.com",
-    phone: "7799667879",
-    address: {
-      line1: "123 Main Street",
-      line2: "Apt 4B, Springfield",
-    },
-    gender: "male",
-    dob: "2000-01-21",
-  });
+  const { userData, setUserData, token, backendurl, loadUserProfileData } =
+    useContext(AppContext);
   const [isEdit, setIsEdit] = useState(false);
+  const [image, setImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(userData.image || "");
+
+  useEffect(() => {
+    // If there's a new image, create a preview URL
+    if (image) {
+      const objectUrl = URL.createObjectURL(image);
+      setImagePreview(objectUrl);
+
+      // Clean up the object URL when component unmounts or image changes
+      return () => URL.revokeObjectURL(objectUrl);
+    } else {
+      // Set image preview from userData when there is no new image
+      setImagePreview(userData.image);
+    }
+  }, [image, userData.image]);
+
+  useEffect(() => {
+    // Set the initial imagePreview when userData changes
+    if (userData.image) {
+      setImagePreview(userData.image);
+    }
+  }, [userData]);
+
+  const updateUserProfileData = async () => {
+    try {
+      const formData = new FormData();
+      formData.append("name", userData.name);
+      formData.append("dob", userData.dob);
+      formData.append("phone", userData.phone);
+      formData.append("address", JSON.stringify(userData.address));
+      formData.append("gender", userData.gender);
+      if (image) formData.append("image", image);
+
+      const { data } = await axios.post(
+        `${backendurl}/api/user/update-profile`,
+        formData,
+        { headers: { token } }
+      );
+
+      if (data.success) {
+        toast.success(data.success);
+        await loadUserProfileData();
+        setIsEdit(false);
+        setImage(null); // Reset image to null after saving
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to update profile. Please try again.");
+    }
+  };
 
   const handleChange = (field, value) => {
     if (field.includes("address.")) {
@@ -40,185 +85,185 @@ const MyProfile = () => {
   };
 
   const toggleEdit = () => {
-    setIsEdit(!isEdit);
+    if (isEdit) updateUserProfileData(); // Save data when switching from edit to view
+    setIsEdit((prev) => !prev);
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-4">
-      <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-3xl">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-semibold text-gray-800">My Profile</h2>
-          <button
-            onClick={toggleEdit}
-            className="flex items-center bg-indigo-500 text-white px-4 py-2 rounded-md hover:bg-indigo-600 transition duration-300"
-          >
-            {isEdit ? <FaSave className="mr-2" /> : <FaEdit className="mr-2" />}
-            {isEdit ? "Save" : "Edit"}
-          </button>
-        </div>
-
-        {/* Profile Picture and Name */}
-        <div className="flex flex-col md:flex-row items-center md:items-start mb-8">
-          <div className="relative">
-            <img
-              src={userData.image}
-              alt="Profile"
-              className="w-32 h-32 rounded-full object-cover border-4 border-indigo-500"
-            />
-            {isEdit && (
-              <div className="absolute bottom-0 right-0 bg-indigo-500 text-white rounded-full p-2 cursor-pointer hover:bg-indigo-600 transition">
-                <FaEdit />
-              </div>
-            )}
-          </div>
-          <div className="mt-4 md:mt-0 md:ml-6 text-center md:text-left">
-            {isEdit ? (
-              <div className="flex items-center justify-center md:justify-start">
-                <FaUser className="text-gray-500 mr-2" />
-                <input
-                  type="text"
-                  value={userData.name}
-                  onChange={(e) => handleChange("name", e.target.value)}
-                  className="border-b-2 border-indigo-500 focus:outline-none focus:border-indigo-700 text-lg font-medium text-gray-800 w-full"
-                />
-              </div>
-            ) : (
-              <h3 className="text-2xl font-semibold text-gray-800 flex items-center justify-center md:justify-start">
-                <FaUser className="text-indigo-500 mr-2" />
-                {userData.name}
-              </h3>
-            )}
-            <p className="text-gray-600 mt-2">Patient</p>
-          </div>
-        </div>
-
-        <hr className="border-t-2 border-gray-200 mb-6" />
-
-        {/* Contact Information */}
-        <div className="mb-6">
-          <h4 className="text-xl font-semibold text-gray-700 mb-4">
-            Contact Information
-          </h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {/* Email - Read Only */}
-            <div className="flex items-center">
-              <FaEnvelope className="text-indigo-500 mr-3" />
-              <p className="text-gray-800">{userData.email}</p>
-            </div>
-            {/* Phone */}
-            <div className="flex items-center">
-              <FaPhone className="text-indigo-500 mr-3" />
+    userData && (
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-4">
+        <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-3xl">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-semibold text-gray-800">My Profile</h2>
+            <button
+              onClick={toggleEdit}
+              className="flex items-center bg-indigo-500 text-white px-4 py-2 rounded-md hover:bg-indigo-600 transition duration-300"
+            >
               {isEdit ? (
-                <input
-                  type="text"
-                  value={userData.phone}
-                  onChange={(e) => handleChange("phone", e.target.value)}
-                  className="w-full border-b-2 border-indigo-500 focus:outline-none focus:border-indigo-700"
-                  required
-                />
+                <FaSave className="mr-2" />
               ) : (
-                <p className="text-gray-800">{userData.phone}</p>
+                <FaEdit className="mr-2" />
               )}
-            </div>
-            {/* Address Line 1 */}
-            <div className="flex items-start">
-              <FaHome className="text-indigo-500 mr-3 mt-1" />
-              {isEdit ? (
-                <input
-                  type="text"
-                  value={userData.address.line1}
-                  onChange={(e) =>
-                    handleChange("address.line1", e.target.value)
-                  }
-                  className="w-full border-b-2 border-indigo-500 focus:outline-none focus:border-indigo-700 mb-2"
-                  required
-                />
-              ) : (
-                <p className="text-gray-800">{userData.address.line1}</p>
-              )}
-            </div>
-            {/* Address Line 2 */}
-            <div className="flex items-start">
-              <FaHome className="text-indigo-500 mr-3 mt-1" />
-              {isEdit ? (
-                <input
-                  type="text"
-                  value={userData.address.line2}
-                  onChange={(e) =>
-                    handleChange("address.line2", e.target.value)
-                  }
-                  className="w-full border-b-2 border-indigo-500 focus:outline-none focus:border-indigo-700"
-                />
-              ) : (
-                <p className="text-gray-800">{userData.address.line2}</p>
-              )}
-            </div>
+              {isEdit ? "Save" : "Edit"}
+            </button>
           </div>
-        </div>
 
-        <hr className="border-t-2 border-gray-200 mb-6" />
-
-        {/* Basic Information */}
-        <div className="mb-6">
-          <h4 className="text-xl font-semibold text-gray-700 mb-4">
-            Basic Information
-          </h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {/* Gender */}
-            <div className="flex items-center">
-              <FaVenusMars className="text-indigo-500 mr-3" />
-              {isEdit ? (
-                <select
-                  value={userData.gender}
-                  onChange={(e) => handleChange("gender", e.target.value)}
-                  className="w-full border-b-2 border-indigo-500 focus:outline-none focus:border-indigo-700"
-                  required
+          {/* Profile Picture and Name */}
+          <div className="flex flex-col md:flex-row items-center md:items-start mb-8">
+            <div className="relative group">
+              <img
+                src={imagePreview}
+                alt="Profile"
+                className="w-32 h-32 rounded-full object-cover border-4 border-indigo-500 shadow-lg transition-transform duration-300 transform group-hover:scale-105"
+              />
+              {isEdit && (
+                <label
+                  htmlFor="image"
+                  className="absolute inset-0 rounded-full bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer"
                 >
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                </select>
-              ) : (
-                <p className="text-gray-800 capitalize">{userData.gender}</p>
+                  <FaEdit className="text-white text-xl" />
+                  <input
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        setImage(e.target.files[0]);
+                      }
+                    }}
+                    type="file"
+                    id="image"
+                    accept="image/*"
+                    className="hidden"
+                  />
+                </label>
               )}
             </div>
-            {/* Birthday */}
-            <div className="flex items-center">
-              <FaBirthdayCake className="text-indigo-500 mr-3" />
+            <div className="mt-4 md:mt-0 md:ml-6 text-center md:text-left w-full">
               {isEdit ? (
-                <input
-                  type="date"
-                  value={userData.dob}
-                  onChange={(e) => handleChange("dob", e.target.value)}
-                  className="w-full border-b-2 border-indigo-500 focus:outline-none focus:border-indigo-700"
-                  required
-                />
+                <div className="flex items-center justify-center md:justify-start">
+                  <FaUser className="text-gray-500 mr-2" />
+                  <input
+                    type="text"
+                    value={userData.name}
+                    onChange={(e) => handleChange("name", e.target.value)}
+                    className="border-b-2 border-indigo-500 focus:outline-none focus:border-indigo-700 text-lg font-medium text-gray-800 w-full"
+                  />
+                </div>
               ) : (
-                <p className="text-gray-800">
-                  {new Date(userData.dob).toLocaleDateString()}
-                </p>
+                <h3 className="text-2xl font-semibold text-gray-800 flex items-center justify-center md:justify-start">
+                  <FaUser className="text-indigo-500 mr-2" />
+                  {userData.name}
+                </h3>
               )}
+              <p className="text-gray-600 mt-2">Patient</p>
             </div>
           </div>
-        </div>
 
-        {/* Action Button */}
-        <div className="flex justify-center">
-          <button
-            onClick={toggleEdit}
-            className={`flex items-center px-6 py-2 rounded-md transition duration-300 ${
-              isEdit
-                ? "bg-green-500 text-white hover:bg-green-600"
-                : "bg-indigo-500 text-white hover:bg-indigo-600"
-            }`}
-          >
-            {isEdit ? <FaSave className="mr-2" /> : <FaEdit className="mr-2" />}
-            {isEdit ? "Save Changes" : "Edit Profile"}
-          </button>
+          <hr className="border-t-2 border-gray-200 mb-6" />
+
+          {/* Contact Information */}
+          <div className="mb-6">
+            <h4 className="text-xl font-semibold text-gray-700 mb-4">
+              Contact Information
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="flex items-center">
+                <FaEnvelope className="text-indigo-500 mr-3" />
+                <p className="text-gray-800">{userData.email}</p>
+              </div>
+              <div className="flex items-center">
+                <FaPhone className="text-indigo-500 mr-3" />
+                {isEdit ? (
+                  <input
+                    type="text"
+                    value={userData.phone}
+                    onChange={(e) => handleChange("phone", e.target.value)}
+                    className="w-full border-b-2 border-indigo-500 focus:outline-none focus:border-indigo-700"
+                    required
+                  />
+                ) : (
+                  <p className="text-gray-800">{userData.phone}</p>
+                )}
+              </div>
+              <div className="flex items-start">
+                <FaHome className="text-indigo-500 mr-3 mt-1" />
+                {isEdit ? (
+                  <input
+                    type="text"
+                    value={userData.address.line1}
+                    onChange={(e) =>
+                      handleChange("address.line1", e.target.value)
+                    }
+                    className="w-full border-b-2 border-indigo-500 focus:outline-none focus:border-indigo-700 mb-2"
+                    required
+                  />
+                ) : (
+                  <p className="text-gray-800">{userData.address.line1}</p>
+                )}
+              </div>
+              <div className="flex items-start">
+                <FaHome className="text-indigo-500 mr-3 mt-1" />
+                {isEdit ? (
+                  <input
+                    type="text"
+                    value={userData.address.line2}
+                    onChange={(e) =>
+                      handleChange("address.line2", e.target.value)
+                    }
+                    className="w-full border-b-2 border-indigo-500 focus:outline-none focus:border-indigo-700"
+                  />
+                ) : (
+                  <p className="text-gray-800">{userData.address.line2}</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <hr className="border-t-2 border-gray-200 mb-6" />
+
+          {/* Basic Information */}
+          <div className="mb-6">
+            <h4 className="text-xl font-semibold text-gray-700 mb-4">
+              Basic Information
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="flex items-center">
+                <FaVenusMars className="text-indigo-500 mr-3" />
+                {isEdit ? (
+                  <select
+                    value={userData.gender}
+                    onChange={(e) => handleChange("gender", e.target.value)}
+                    className="border-b-2 border-indigo-500 focus:outline-none focus:border-indigo-700 w-full"
+                    required
+                  >
+                    <option value="" disabled>
+                      Select Gender
+                    </option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                  </select>
+                ) : (
+                  <p className="text-gray-800">{userData.gender}</p>
+                )}
+              </div>
+              <div className="flex items-center">
+                <FaBirthdayCake className="text-indigo-500 mr-3" />
+                {isEdit ? (
+                  <input
+                    type="date"
+                    value={userData.dob.split("T")[0]} // Format for input date
+                    onChange={(e) => handleChange("dob", e.target.value)}
+                    className="border-b-2 border-indigo-500 focus:outline-none focus:border-indigo-700 w-full"
+                    required
+                  />
+                ) : (
+                  <p className="text-gray-800">{userData.dob.split("T")[0]}</p>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    )
   );
 };
 
